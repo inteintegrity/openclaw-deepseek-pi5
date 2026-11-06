@@ -1,142 +1,73 @@
 # OpenClaw + DeepSeek on Raspberry Pi 5
 
-Run a persistent OpenClaw agent with an OpenAI-compatible DeepSeek gateway using Docker Compose. Clone this repository, configure your API, and start the application. **JishuShell is not required.**
+Install the **JishuShell web panel**, open your board on port **8090**, and manage OpenClaw from the browser.
 
 [中文说明](README.zh-CN.md)
 
-## What is included
+## One-command web-panel setup
 
-- An official OpenClaw 2026.10.10 image pinned to its multi-platform manifest digest.
-- Automatic first-run configuration and a persistent, generated Gateway token.
-- A persistent data volume for sessions, workspace files, and browser pairing.
-- A real verification task: execute commands, write a report, read it back, and compare it with the running container.
-- Start, CLI, login-link, verification, and consistent-backup helpers.
-
-The agent and tools run in the container. The configured gateway performs model inference and receives prompts and tool results. This repository provides deployment glue; OpenClaw and the model are upstream software/services.
-
-## Requirements
-
-- 64-bit Linux on Raspberry Pi 5, Docker Engine, and Docker Compose v2.
-- A working OpenAI-compatible model API, API key, and exact model ID.
-- Network access to Docker Hub for the first image download and to your model API.
-- A few GB of free storage for the image and application state.
-
-Only Pi 5 ARM64 is hardware-tested in this project. The official base-image manifest also includes other architectures; this is not a hardware-validation claim for every reComputer R Series device.
-
-## Start
+On a Linux ARM64 board with Bash, curl, network access, and sudo privileges:
 
 ```bash
-git clone https://github.com/inteintegrity/openclaw-deepseek-pi5.git
-cd openclaw-deepseek-pi5
-cp .env.example .env
+curl -fsSL https://raw.githubusercontent.com/inteintegrity/openclaw-deepseek-pi5/main/scripts/install-jishushell.sh | bash
 ```
 
-Edit `.env` and replace `DEEPSEEK_BASE_URL`, `DEEPSEEK_API_KEY`, and `DEEPSEEK_MODEL` with your own values. The base URL is an API endpoint such as a `/v1` endpoint, not a dashboard URL. For an approved private LAN gateway, explicitly set `ALLOW_PRIVATE_NETWORK=true`.
+Or run `bash scripts/install-jishushell.sh` from a clone of this repository.
 
-```bash
-bash scripts/start.sh
+The helper verifies a fixed official installer and asks it to install JishuShell 0.8.7. The upstream installer prepares Node.js, Docker, Nomad, the OpenClaw runtime, and system services. It may ask for sudo credentials and installation choices. On an existing installation, the helper displays the current version and panel address without reinstalling or deleting applications.
+
+## Continue in the browser
+
+Open:
+
+```text
+http://<BOARD_IP>:8090
 ```
 
-The script builds a small layer on the fixed official image and waits for health. It does not build OpenClaw from source or install Node.js on the host. Standard Docker Compose is also supported:
+1. Set your administrator password on first access.
+2. Configure a model provider using your own API key and available model ID.
+3. Choose **Install Application → OpenClaw**, enter an application name, and create the application.
+4. Wait for **Running** and an online Gateway. Complete browser device pairing if requested.
+5. Use the embedded chat to run the report task below.
 
-```bash
-docker compose up -d --build --wait --wait-timeout 240
-```
+The web panel manages the application containers. The panel itself is installed as a host service by the official installer. Model credentials and the first administrator password are supplied by the operator, rather than embedded in an installation script.
 
-On hosts with no buildx or buildx older than 0.17, use the start helper; it selects the classic builder supported by the tested Docker Engine. Direct Compose builds need a compatible builder.
+For company gateways, use the actual API endpoint and model identifier. Provider-field support depends on the JishuShell version; an authenticated private gateway may need additional provider configuration. See the [complete web-panel guide](docs/jishushell.md).
 
-## Open the application
+## Run a real tool task
 
-The default host binding is **127.0.0.1:18889**. On the Pi's desktop, open `http://localhost:18889`. To use a PC browser, run this on the PC, replacing the SSH user and board address:
-
-```bash
-ssh -N -L 18889:127.0.0.1:18889 <SSH_USER>@<BOARD_IP>
-```
-
-Keep the tunnel open and visit `http://localhost:18889` on the PC. On the Pi, obtain the private login link with:
-
-```bash
-bash scripts/dashboard.sh
-```
-
-Open the displayed link in the intended browser. If OpenClaw requests browser approval, inspect pending devices and approve **only the request shown in that browser**:
-
-```bash
-bash scripts/cli.sh devices list
-bash scripts/cli.sh devices approve <REQUEST_ID>
-```
-
-Pairing is an operator step. This repository never automatically approves a browser or disables device authentication. The default local binding and SSH tunnel do not require a reverse proxy or JishuShell compatibility patches.
-
-## Use the demo
-
-In the chat UI, ask:
+Ask in chat:
 
 > Inspect this OpenClaw container's architecture and Node.js version using your tools. Save the actual results to demo/system-report.md, read it back, and present a short table. Do not access credentials or network services.
 
-Expand the activity group to see the tool operations. The saved file is in `/home/node/.openclaw/workspace/demo/` inside the persistent volume. It describes the container, not a full host hardware inventory.
+Expand the tool activity to inspect execution, writing, and reading. The report describes the container. Prompts and tool results are sent to your configured model gateway for inference.
 
-To run an automated model-and-tool check:
+## Inspect the installation
 
-```bash
-bash scripts/verify.sh
-```
-
-The check creates a unique verification task, requires a successful agent result, reads the actual saved file, and compares its ID, Node.js version, and architecture with the running container. It makes real model calls and consumes your provider quota. Inspect the printed session ID before retrying a failed/timeout run.
-
-## Configuration
-
-| Variable | Purpose |
-| --- | --- |
-| `DEEPSEEK_BASE_URL` | OpenAI-compatible API base URL |
-| `DEEPSEEK_API_KEY` | Your model API key; never commit `.env` |
-| `DEEPSEEK_MODEL` | Model identifier exposed by that gateway |
-| `ALLOW_PRIVATE_NETWORK` | Explicit permission for an approved LAN API; default `false` |
-| `HOST_PORT` | Host port; default `18889` |
-| `BIND_ADDRESS` | Host interface; default `127.0.0.1` |
-| `PUBLIC_ORIGIN` | Exact browser origin; default `http://localhost:18889` |
-| `OPENCLAW_GATEWAY_TOKEN` | Optional explicit token, at least 32 characters; otherwise generated and retained |
-
-After changing `.env`, run `bash scripts/start.sh` again. A generated Gateway token survives container recreation. The API key remains an environment reference in the generated config; `.env` and backups are private.
-
-If you deliberately use direct LAN access, change `BIND_ADDRESS` and `PUBLIC_ORIGIN` to match that deployment and follow OpenClaw's requirements for browser access. Do not make the Gateway public as part of this demo.
-
-## Stop, recreate, and back up
+From a clone:
 
 ```bash
-docker compose down
-bash scripts/start.sh
+bash scripts/install-jishushell.sh --check
+bash scripts/install-jishushell.sh --dry-run
 ```
 
-`down` removes the container and network while retaining the named state volume. The second command recreates the application with its sessions and workspace intact.
+`--check` inspects the existing panel; `--dry-run` verifies the upstream installer and displays its plan. Neither is a claim of a complete fresh-OS installation test. Exact checks are documented in the [validation record](docs/validation.md).
 
-```bash
-bash scripts/backup.sh
-```
+## Optional standalone Compose deployment
 
-The backup helper stops the Gateway, archives its state, checks gzip integrity, writes a SHA-256 file, and starts the Gateway again. Backups contain private configuration and sessions and are git-ignored.
+For a direct container deployment without the management panel, the repository also includes the independently tested Dockerfile, Compose configuration, `.env.example`, persistent storage, automated tool verification, and backup/recovery scripts:
 
-For backup verification and restore instructions, see [backup and recovery](docs/backup.md). `docker compose down --volumes` deletes the data volume and is intentionally not part of normal recreation instructions.
+- [English Compose guide](docs/compose.md)
+- [中文 Compose 说明](docs/compose.zh-CN.md)
 
-## Troubleshooting
+This path uses port 18889 and its own data volume. Its startup and verification commands are separate from JishuShell-managed instances.
 
-| Symptom | Check |
-| --- | --- |
-| Invalid configuration on startup | Replace all example API values; inspect `docker compose logs --tail=100 openclaw` |
-| LAN model requests rejected | Confirm the exact endpoint is approved and set `ALLOW_PRIVATE_NETWORK=true` |
-| Model not found or 401 | Verify the gateway's model ID and API key; a dashboard URL is not an API base URL |
-| Browser cannot connect | Check service health, SSH tunnel, local port conflicts, and `PUBLIC_ORIGIN` |
-| Browser approval screen | Approve its specific pending device request using the CLI; keep authentication enabled |
-| First download fails | Check the official registry route; the Dockerfile pins an immutable official manifest |
+## Source and tests
 
-## Tests and validation
-
-No npm packages are needed to test the deployment configuration:
+The JishuShell entry point downloads the official installer at a pinned commit and checks its SHA-256. No upstream installer code, API keys, or account credentials are bundled here. The optional Compose path uses a digest-pinned official OpenClaw image.
 
 ```bash
 npm test
 ```
 
-Hardware evidence and the exact checks performed are recorded in [validation](docs/validation.md). CI checks configuration behavior, shell syntax, and Compose syntax; it does not claim to test your private API or browser pairing.
-
-Deployment code is MIT licensed. OpenClaw and software in its official image retain their respective upstream licenses.
+CI checks configuration behavior, shell syntax, installer help, and Compose syntax. Deployment helpers are MIT licensed; upstream software retains its own licenses.

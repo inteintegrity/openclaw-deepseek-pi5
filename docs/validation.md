@@ -1,8 +1,21 @@
 # Validation record
 
-Verified on November 6, 2026. Earlier JishuShell results are not counted as evidence for this independent deployment.
+Verified on November 6, 2026. The web-panel entry and the optional independent Compose deployment have separate validation scopes below.
 
-## Environment
+## JishuShell web-panel entry
+
+| Check | Result |
+| --- | --- |
+| Official installer source | Fixed upstream commit and SHA-256 verified |
+| Installed JishuShell | 0.8.7 |
+| Default run on existing installation | Reused installation and displayed panel URLs; no reinstall or app deletion |
+| `--check` on the Pi | Panel on port 8090 responded |
+| `--dry-run` on the Pi | Official plan functions rendered without sudo or installation |
+| Shell syntax and help | Passed |
+
+The pinned official installer supports preparing Node.js, Docker, Nomad, the agent runtime, and startup services. Its live installation branch was not rerun on the working board, and a blank-OS installation is not claimed as tested. Administrator password, model credentials, and browser pairing remain operator steps. The plan-only wrapper invokes the upstream script's documented sourceable helpers rather than its full main path.
+
+## Independent Compose environment
 
 | Item | Observed value |
 | --- | --- |
@@ -18,7 +31,7 @@ Verified on November 6, 2026. Earlier JishuShell results are not counted as evid
 
 The test used a new Compose project and new named data volume on the existing Pi. It did not use JishuShell's state, model proxy, patched templates, or locally modified OpenClaw image. Docker/Compose installation and OS flashing are prerequisites, not part of the clean-state claim.
 
-## Checks performed
+## Independent Compose checks performed
 
 | Check | Result |
 | --- | --- |
