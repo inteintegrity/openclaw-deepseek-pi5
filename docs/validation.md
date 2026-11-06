@@ -35,6 +35,9 @@ The test used a new Compose project and new named data volume on the existing Pi
 | Recovery test resources | Removed after validation |
 | Gateway `/healthz` | HTTP 200 |
 | Control UI HTML and entry JavaScript | HTTP 200 |
+| Login-link helper | Emitted the configured host origin; private link not published |
+| Fresh clone from the public GitHub repository | Fresh-volume startup and real model/tool verification passed |
+| GitHub Actions | Configuration tests, Bash syntax, and Compose syntax passed |
 
 The verification checks actual files produced by an agent task, not only HTTP connectivity. It does not assert that every OpenClaw feature or external integration works.
 
