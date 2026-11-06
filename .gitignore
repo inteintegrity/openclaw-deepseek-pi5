@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+backups/
+test-results/
+node_modules/
+*.log
+*.tar
+*.tar.gz
+*.zip
+.DS_Store
